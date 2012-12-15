@@ -20,7 +20,7 @@ Add this line to your `config/deploy.rb`:
 ## Usage
 
 Your deploys will now be protected by a lock. Simply run `cap deploy` as usual.
-However, if someone else trys to deploy at the same time, their deploy will abort
+However, if someone else tries to deploy at the same time, their deploy will abort
 with an error like this:
 
 ```
