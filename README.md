@@ -17,6 +17,7 @@ Add this line to your `config/deploy.rb`:
 
     require 'capistrano/deploy_lock'
 
+
 ## Usage
 
 Your deploys will now be protected by a lock. Simply run `cap deploy` as usual.
@@ -31,26 +32,18 @@ with an error like this:
 ```
 
 The default deploy lock will expire after 15 minutes. This is so that crashed or interrupted deploys don't leave a stale lock
-for the next developer to deal with. If your deploys usually take longer than this, the expiry time can be configured with:
-
-    set :default_lock_expiry, (20 * 60)   # Sets the default expiry to 20 minutes
-
-Anyone can remove a lock by running:
-
-    cap deploy:unlock
-
-The lock file will be created at `#{shared_path}/capistrano.lock.yml` by default. You can configure this with:
-
-    set :deploy_lockfile, "path/to/deploy/lock/file"
+for the next developer to deal with.
 
 
-## Manual locks
+## Tasks
 
-You can explicitly set a deploy lock by running:
+### `deploy:with_lock`
 
-    cap deploy:lock
+Deploy the latest revision with a custom deploy lock. This lock will not be removed at the end of the deploy.
 
-You will receive two prompts:
+### `deploy:lock`
+
+Sets a custom deploy lock. You will receive two prompts for input:
 
 * Lock Message:
 
@@ -64,7 +57,32 @@ If the [chronic](https://github.com/mojombo/chronic) gem is available, you can t
 natural language times like `2 hours`, or `tomorrow at 6am`. If not, you must type times in a format that `DateTime.parse()` can handle,
 such as `06:30:00` or `2012-12-12 00:00:00`.
 
-The `cap deploy:check_lock` task will automatically delete any expired locks.
+### `deploy:unlock`
+
+Remove any deploy lock.
+
+### `deploy:check_lock`
+
+Check if server is locked. If the deploy lock was not created by you, an error will be raised and the deploy will abort.
+If the lock **was** created by you, the deploy will pause for 4 seconds, which gives you time to press `Ctrl+C` to cancel the deploy.
+
+This task is also responsible for deleting any expired locks.
+
+### `deploy:refresh_lock`
+
+Refreshes the current lock's expiry time if it is less than the default time.
+
+
+## Configuration
+
+If your deploys usually take longer than 15 minutes, you can configure the default expiry time with:
+
+    set :default_lock_expiry, (20 * 60)   # Sets the default expiry to 20 minutes
+
+The lock file will be created at `#{shared_path}/capistrano.lock.yml` by default. You can configure this with:
+
+    set :deploy_lockfile, "path/to/deploy/lock/file"
+
 
 ## Thanks
 
