@@ -30,9 +30,8 @@ with an error like this:
 .../capistrano/deploy_lock.rb:132:in `block (3 levels) in <top (required)>': Capistrano::DeployLockedError (Capistrano::DeployLockedError)
 ```
 
-The default 'deploy' lock will expire after 15 minutes, assuming that your deploys will not take more time than this.
-This is so that crashed or interrupted deploys don't leave a stale lock for the next developer to deal with.
-This default expiry time can be configured with:
+The default deploy lock will expire after 15 minutes. This is so that crashed or interrupted deploys don't leave a stale lock
+for the next developer to deal with. If your deploys usually take longer than this, the expiry time can be configured with:
 
     set :default_lock_expiry, (20 * 60)   # Sets the default expiry to 20 minutes
 
