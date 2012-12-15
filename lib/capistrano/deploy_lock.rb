@@ -23,6 +23,7 @@ Capistrano::DeployLockedError = Class.new(StandardError)
 
 Capistrano::Configuration.instance(:must_exist).load do
   before "deploy", "deploy:check_lock"
+  before "deploy", "deploy:refresh_lock"
   before "deploy", "deploy:create_lock"
   after  "deploy", "deploy:unlock"
 
@@ -34,7 +35,29 @@ Capistrano::Configuration.instance(:must_exist).load do
   log_formatter(:match => /Deploy locked/, :color => :red, :style => :bright, :priority => 20)
 
   namespace :deploy do
-    # Set deploy lock with a custom lock message and expiry time
+    # Fetch the deploy lock unless already cached
+    def fetch_deploy_lock
+      if self[:deploy_lock].nil?
+        lock_file = capture("[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true").strip
+        if lock_file != ""
+          set :deploy_lock, YAML.load(lock_file)
+        else
+          set :deploy_lock, false
+        end
+      end
+    end
+
+    def write_deploy_lock(deploy_lock)
+      put deploy_lock.to_yaml, deploy_lockfile, :mode => 0777
+    end
+
+    desc "Deploy with a custom deploy lock"
+    task :with_lock do
+      lock
+      deploy.default
+    end
+
+    desc "Set deploy lock with a custom lock message and expiry time"
     task :lock do
       set :lock_message, Capistrano::CLI.ui.ask("Lock Message: ")
 
@@ -63,13 +86,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       set :custom_deploy_lock, true
     end
 
-    desc "Deploy with a custom deploy lock"
-    task :with_lock do
-      lock
-      deploy.default
-    end
-
-    desc "Creates a lock file, so that futher deploys will be prevented."
+    desc "Creates a lock file, so that futher deploys will be prevented"
     task :create_lock do
       if self[:custom_deploy_lock]
         logger.info 'Custom deploy lock already created.'
@@ -83,16 +100,16 @@ Capistrano::Configuration.instance(:must_exist).load do
         set :lock_expiry, (Time.now + default_lock_expiry).utc
       end
 
-      lock = {
+      deploy_lock = {
         :created_at => Time.now.utc,
         :username   => ENV['USER'],
         :expire_at  => self[:lock_expiry],
         :message    => self[:lock_message]
       }
-      put lock.to_yaml, deploy_lockfile, :mode => 0777
+      write_deploy_lock(deploy_lock)
     end
 
-    desc "Unlocks the server for deployment."
+    desc "Unlocks the server for deployment"
     task :unlock do
       # Don't automatically remove custom deploy locks created by deploy:lock task
       if self[:custom_deploy_lock]
@@ -107,12 +124,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       # Don't check the lock if we just created it
       next if self[:custom_deploy_lock]
 
-      lock_file = capture("[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true").strip
-      next if lock_file == ""
+      fetch_deploy_lock
+      # Return if no lock
+      next unless self[:deploy_lock]
 
-      lock = YAML.load(lock_file)
-
-      if lock[:expire_at] && lock[:expire_at] < Time.now
+      if deploy_lock[:expire_at] && deploy_lock[:expire_at] < Time.now
         logger.info "Deleting expired deploy lock..."
         unlock
         next
@@ -121,19 +137,19 @@ Capistrano::Configuration.instance(:must_exist).load do
       # Unexpired lock is present, so display message:
 
       if defined?(Capistrano::DateHelper)
-        locked_ago = Capistrano::DateHelper.distance_of_time_in_words_to_now lock[:created_at].localtime
+        locked_ago = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:created_at].localtime
         message = "Deploy locked #{locked_ago} ago"
       else
-        message = "Deploy locked at #{lock[:created_at].localtime}"
+        message = "Deploy locked at #{deploy_lock[:created_at].localtime}"
       end
-      message << " by '#{lock[:username]}'\nMessage: #{lock[:message]}"
+      message << " by '#{deploy_lock[:username]}'\nMessage: #{deploy_lock[:message]}"
 
-      if lock[:expire_at]
+      if deploy_lock[:expire_at]
         if defined?(Capistrano::DateHelper)
-          expires_in = Capistrano::DateHelper.distance_of_time_in_words_to_now lock[:expire_at].localtime
+          expires_in = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:expire_at].localtime
           message << "\nExpires in #{expires_in}"
         else
-          message << "\nExpires at #{lock[:expire_at].localtime.strftime("%H:%M:%S")}"
+          message << "\nExpires at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
         end
       else
         message << "\nLock must be manually removed with: cap #{stage} deploy:unlock"
@@ -144,25 +160,35 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       # Don't raise exception if current user owns the lock.
       # Just sleep so they have a chance to Ctrl-C
-      if lock[:username] == ENV['USER']
+      if deploy_lock[:username] == ENV['USER']
         4.downto(1) do |i|
           Kernel.print "\rDeploy lock was created by you (#{ENV['USER']}). Continuing deploy in #{i}..."
           sleep 1
         end
         puts
-
-        # Refresh lock expiry time if it's going to expire soon
-        if lock[:expire_at] && lock[:expire_at] < (Time.now + default_lock_expiry)
-          logger.info "Resetting lock expiry to default..."
-          lock[:expire_at] = (Time.now + default_lock_expiry).utc
-          put lock.to_yaml, deploy_lockfile, :mode => 0777
-        end
-
-        # Set the deploy_lock_created flag so that the lock isn't automatically removed after deploy
-        set :custom_deploy_lock, true
       else
         raise Capistrano::DeployLockedError
       end
+    end
+
+    desc "Refreshes an existing deploy lock's expiry time, if it is less than the default time"
+    task :refresh_lock do
+      # Don't refresh custom locks
+      next if self[:custom_deploy_lock]
+
+      fetch_deploy_lock
+      next unless self[:deploy_lock]
+
+      # Refresh lock expiry time if it's going to expire soon
+      if deploy_lock[:expire_at] && deploy_lock[:expire_at] < (Time.now + default_lock_expiry)
+        logger.info "Resetting lock expiry to default..."
+        deploy_lock[:expire_at] = (Time.now + default_lock_expiry).utc
+
+        write_deploy_lock(deploy_lock)
+      end
+
+      # Set the deploy_lock_created flag so that the lock isn't automatically removed after deploy
+      set :custom_deploy_lock, true
     end
   end
 end
