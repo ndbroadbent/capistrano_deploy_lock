@@ -46,7 +46,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         else
           parsed_expiry = nil
           if defined?(Chronic)
-            parsed_expiry = (Chronic.parse(expiry_str) || Chronic.parse("#{expiry_str} from now"))
+            parsed_expiry = Chronic.parse(expiry_str) || Chronic.parse("#{expiry_str} from now")
           else
             if dt = (DateTime.parse(expiry_str) rescue nil)
               parsed_expiry = dt.to_time
