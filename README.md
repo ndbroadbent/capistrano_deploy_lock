@@ -31,8 +31,22 @@ with an error like this:
 .../capistrano/deploy_lock.rb:132:in `block (3 levels) in <top (required)>': Capistrano::DeployLockedError (Capistrano::DeployLockedError)
 ```
 
-The default deploy lock will expire after 15 minutes. This is so that crashed or interrupted deploys don't leave a stale lock
-for the next developer to deal with.
+The default deploy lock will expire after 15 minutes. This is so that crashed or interrupted deploys don't leave a stale lock behind.
+
+The following tasks will be run before deploy:
+
+  * `deploy:check_lock`
+    * Checks for an existing deploy lock. Aborts deploy if a lock exists and it wasn't created by you.
+  * `deploy:refresh_lock`
+    * If you previously created a lock, this task ensures that your lock won't expire before the default expiry time
+  * `deploy:create_lock`
+    * If no locks already exist, a default lock will be created with the message: `Deploying <branch>`
+
+The following task will be run after deploy:
+
+  * `deploy:unlock`
+    * Removes any default deploy locks. If you set a custom lock, it will not be removed at this step.
+    * You can remove a custom deploy lock by running `cap deploy:unlock` by itself.
 
 
 ## Tasks
@@ -45,11 +59,11 @@ Deploy the latest revision with a custom deploy lock. This lock will not be remo
 
 Sets a custom deploy lock. You will receive two prompts for input:
 
-* Lock Message:
+* **Lock Message:**
 
 Type the reason for the lock. This message will be displayed to any developers who attempt to deploy.
 
-* Expire lock at? (optional):
+* **Expire lock at? (optional):**
 
 Set an expiry time for the lock. Leave this blank to make the lock last until someone removes it with `cap deploy:unlock`.
 
