@@ -28,6 +28,10 @@ Capistrano::Configuration.instance(:must_exist).load do
       put deploy_lock.to_yaml, deploy_lockfile, :mode => 0777
     end
 
+    def remove_deploy_lock
+      run "rm -f #{deploy_lockfile}"
+    end
+
     desc "Deploy with a custom deploy lock"
     task :with_lock do
       lock
@@ -93,12 +97,12 @@ Capistrano::Configuration.instance(:must_exist).load do
         if self[:custom_deploy_lock]
           logger.info 'Not removing custom deploy lock.'
         else
-          force
+          remove_deploy_lock
         end
       end
 
       task :force do
-        run "rm -f #{deploy_lockfile}"
+        remove_deploy_lock
       end
     end
 
