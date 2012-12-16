@@ -1,8 +1,8 @@
 Capistrano::Configuration.instance(:must_exist).load do
-  before "deploy", "deploy:check_lock"
-  before "deploy", "deploy:refresh_lock"
-  before "deploy", "deploy:create_lock"
-  after  "deploy", "deploy:unlock"
+  before "deploy:update_code",    "deploy:check_lock"
+  before "deploy:update_code",    "deploy:refresh_lock"
+  before "deploy:update_code",    "deploy:create_lock"
+  after  "deploy:create_symlink", "deploy:unlock"
 
   # Default lock expiry of 15 minutes (in case deploy crashes or is interrupted)
   _cset :default_lock_expiry, (15 * 60)
