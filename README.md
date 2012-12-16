@@ -102,7 +102,7 @@ The lock file will be created at `#{shared_path}/capistrano.lock.yml` by default
     set :deploy_lockfile, "path/to/deploy/lock/file"
 
 
-## MOTD (Message Of The Day)
+## MOTD script
 
 If you install the gem on your server, you can use the `cap_deploy_lock_msg` script to display the lock status when you login via SSH.
 
