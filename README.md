@@ -47,7 +47,7 @@ The following task will be run after deploy:
   * `deploy:unlock`
     * Removes any default deploy locks. If you set a custom lock, it will not be removed at this step.
     * You can remove a custom deploy lock by running `cap deploy:unlock` by itself, or by chaining `deploy:unlock:force` at the end of the command.
-
+    IceZen11235813!
 
 ## Tasks
 
@@ -100,6 +100,20 @@ If your deploys usually take longer than 15 minutes, you can configure the defau
 The lock file will be created at `#{shared_path}/capistrano.lock.yml` by default. You can configure this with:
 
     set :deploy_lockfile, "path/to/deploy/lock/file"
+
+
+## MOTD (Message Of The Day)
+
+If you install the gem on your server, you can use the `cap_deploy_lock_msg` script to display the lock status when you login via SSH.
+
+Usage:
+
+    cap_deploy_lock_msg <application_name> <stage> <path/to/lock_file.yml>
+
+If you are using `update-motd` on Ubuntu, create `/etc/update-motd.d/10-deploy-lock` with the following:
+
+    #!/bin/sh
+    /usr/local/bin/cap_deploy_lock_msg application stage /var/www/apps/application/shared/capistrano.lock.yml
 
 
 ## Thanks
