@@ -73,7 +73,11 @@ such as `06:30:00` or `2012-12-12 00:00:00`.
 
 ### `deploy:unlock`
 
-Remove any deploy lock.
+Removes the deploy lock. Will not remove a custom deploy lock when it is chained after `deploy:lock`.
+
+### `deploy:unlock:force`
+
+Removes any deploy lock, even when chained after `deploy:lock`.
 
 ### `deploy:check_lock`
 

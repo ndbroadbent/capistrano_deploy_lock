@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+if ARGV.size != 3
+  puts "Usage: cap_deploy_lock_msg <application_name> <stage> <path/to/lock_file.yml>"
+else
+  $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+  require 'rubygems'
+  require 'yaml'
+  require 'capistrano/deploy_lock'
+
+  application, stage, lock_file = *ARGV
+  if File.exists?(lock_file)
+    deploy_lock = YAML.load_file(lock_file)
+
+    # Only show lock message if lock hasn't expired
+    if deploy_lock[:expire_at] && deploy_lock[:expire_at] > Time.now
+      puts Capistrano::DeployLock.message(application, stage, deploy_lock)
+      exit
+    end
+  end
+
+  puts "No deploy locks for #{application} (#{stage})"
+end
