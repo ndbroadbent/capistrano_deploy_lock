@@ -47,7 +47,6 @@ The following task will be run after deploy:
   * `deploy:unlock`
     * Removes any default deploy locks. If you set a custom lock, it will not be removed at this step.
     * You can remove a custom deploy lock by running `cap deploy:unlock` by itself, or by chaining `deploy:unlock:force` at the end of the command.
-    IceZen11235813!
 
 ## Tasks
 
