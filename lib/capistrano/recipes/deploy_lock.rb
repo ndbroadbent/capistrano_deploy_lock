@@ -124,7 +124,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       stg = nil
       begin
         stg = stage
-      rescue NoMethodError
+      rescue NameError
         # this means we don't have multistage. ok.
       end
 
