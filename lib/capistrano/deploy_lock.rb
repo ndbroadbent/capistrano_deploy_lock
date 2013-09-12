@@ -30,9 +30,31 @@ module Capistrano
       if deploy_lock[:expire_at]
         if defined?(Capistrano::DateHelper)
           expires_in = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:expire_at].localtime
-          message << "\nExpires in #{expires_in}"
+          message << "\nLock expires in #{expires_in}"
         else
-          message << "\nExpires at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
+          message << "\nLock expires at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
+        end
+      else
+        message << "\nLock must be manually removed with: cap #{stage} deploy:unlock"
+      end
+    end
+
+    def self.expired_message(application, stage, deploy_lock)
+      message = "#{application} (#{stage}) was locked"
+      if defined?(Capistrano::DateHelper)
+        locked_ago = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:created_at].localtime
+        message << " #{locked_ago} ago"
+      else
+        message << " at #{deploy_lock[:created_at].localtime}"
+      end
+      message << " by '#{deploy_lock[:username]}'\nMessage: #{deploy_lock[:message]}"
+
+      if deploy_lock[:expire_at]
+        if defined?(Capistrano::DateHelper)
+          expires_in = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:expire_at].localtime
+          message << "\nLock expired #{expires_in} ago, unlocking..."
+        else
+          message << "\nLock expired at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
         end
       else
         message << "\nLock must be manually removed with: cap #{stage} deploy:unlock"
