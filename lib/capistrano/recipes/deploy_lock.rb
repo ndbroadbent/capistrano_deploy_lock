@@ -121,15 +121,8 @@ Capistrano::Configuration.instance(:must_exist).load do
         next
       end
 
-      stg = nil
-      begin
-        stg = stage
-      rescue NameError
-        # this means we don't have multistage. ok.
-      end
-
       # Unexpired lock is present, so display the lock message
-      logger.important Capistrano::DeployLock.message(application, stg, deploy_lock)
+      logger.important Capistrano::DeployLock.message(application, (respond_to?(:stage) ? stage : nil), deploy_lock)
 
       # Don't raise exception if current user owns the lock.
       # Just sleep so they have a chance to Ctrl-C
