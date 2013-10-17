@@ -134,7 +134,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       self[:custom_deploy_lock] = deploy_lock[:custom]
 
       # Unexpired lock is present, so display the lock message
-      logger.important Capistrano::DeployLock.message(application, stage, deploy_lock)
+      logger.important Capistrano::DeployLock.message(application, (respond_to?(:stage) ? stage : nil), deploy_lock)
 
       # Don't raise exception if current user owns the lock, and lock has an expiry time.
       # Just sleep for a few seconds so they have a chance to cancel the deploy with Ctrl-C

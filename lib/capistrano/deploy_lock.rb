@@ -18,7 +18,11 @@ module Capistrano
 
   module DeployLock
     def self.message(application, stage, deploy_lock)
-      message = "#{application} (#{stage}) was locked"
+      if stage
+        message = "#{application} (#{stage}) was locked"
+      else
+        message = "#{application} was locked"
+      end
       if defined?(Capistrano::DateHelper)
         locked_ago = Capistrano::DateHelper.distance_of_time_in_words_to_now deploy_lock[:created_at].localtime
         message << " #{locked_ago} ago"
@@ -57,7 +61,7 @@ module Capistrano
           message << "\nLock expired at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
         end
       else
-        message << "\nLock must be manually removed with: cap #{stage} deploy:unlock"
+        message << "\nLock must be manually removed with: cap #{stage ? stage + ' ' : ''}deploy:unlock"
       end
     end
   end
