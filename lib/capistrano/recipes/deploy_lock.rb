@@ -91,7 +91,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         :created_at => Time.now.utc,
         :username   => ENV['USER'],
         :expire_at  => self[:lock_expiry],
-        :message    => self[:lock_message],
+        :message    => self[:lock_message].to_s,  # .to_s makes a String out of Highline::String
         :custom     => !!self[:custom_deploy_lock]
       }
       write_deploy_lock(deploy_lock_data)
