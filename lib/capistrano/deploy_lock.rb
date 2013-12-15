@@ -14,8 +14,6 @@ rescue LoadError
 end
 
 module Capistrano
-  DeployLockedError = Class.new(StandardError)
-
   module DeployLock
     def self.message(application, stage, deploy_lock)
       if stage

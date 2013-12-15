@@ -21,14 +21,13 @@ Add this line to your `config/deploy.rb`:
 ## Usage
 
 Your deploys will now be protected by a lock. Simply run `cap deploy` as usual.
-However, if someone else tries to deploy at the same time, their deploy will abort
-with an error like this:
+However, if someone else tries to deploy at the same time, their deploy will show
+a message like this, and exit:
 
 ```
 *** Deploy locked 3 minutes ago by 'ndbroadbent'
 *** Message: Deploying master branch
 *** Expires in 12 minutes
-.../capistrano/deploy_lock.rb:132:in `block (3 levels) in <top (required)>': Capistrano::DeployLockedError (Capistrano::DeployLockedError)
 ```
 
 The default deploy lock will expire after 15 minutes. This is so that crashed or interrupted deploys don't leave a stale lock behind.

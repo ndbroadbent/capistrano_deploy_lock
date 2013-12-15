@@ -19,12 +19,20 @@ Capistrano::Configuration.instance(:must_exist).load do
       return if self[:deploy_lock_removed]
 
       if self[:deploy_lock].nil?
-        lock_file = capture("[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true").strip
-        if lock_file != ""
-          set :deploy_lock, YAML.load(lock_file)
-        else
-          set :deploy_lock, false
+        # Check all matching servers for a deploy lock.
+        parallel do |session|
+          find_servers_for_task(current_task).each do |current_server|
+            session.else "[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true" do |ch, stream, output|
+              if output && output != ""
+                logger.info "Deploy lock found on: #{current_server.host}"
+                set :deploy_lock, YAML.load(output)
+                return
+              end
+            end
+          end
         end
+
+        set :deploy_lock, false
       end
     end
 
@@ -39,13 +47,13 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     desc "Deploy with a custom deploy lock"
-    task :with_lock, roles: :app do
+    task :with_lock, :except => { :no_release => true } do
       lock
       deploy.default
     end
 
     desc "Set deploy lock with a custom lock message and expiry time"
-    task :lock, roles: :app do
+    task :lock, :except => { :no_release => true } do
       set :lock_message, Capistrano::CLI.ui.ask("Lock Message: ")
       set :custom_deploy_lock, true
 
@@ -74,7 +82,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     desc "Creates a lock file, so that futher deploys will be prevented"
-    task :create_lock, roles: :app do
+    task :create_lock, :except => { :no_release => true } do
       if self[:deploy_lock]
         logger.info 'Deploy lock already created.'
         next
@@ -101,7 +109,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     namespace :unlock do
       desc "Unlocks the server for deployment"
-      task :default, roles: :app do
+      task :default, :except => { :no_release => true } do
         # Don't automatically remove custom deploy locks created by deploy:lock task
         if self[:custom_deploy_lock]
           logger.info 'Not removing custom deploy lock.'
@@ -110,13 +118,13 @@ Capistrano::Configuration.instance(:must_exist).load do
         end
       end
 
-      task :force, roles: :app do
+      task :force, :except => { :no_release => true } do
         remove_deploy_lock
       end
     end
 
     desc "Checks for a deploy lock. If present, deploy is aborted and message is displayed. Any expired locks are deleted."
-    task :check_lock, roles: :app do
+    task :check_lock, :except => { :no_release => true } do
       # Don't check the lock if we just created it
       next if self[:deploy_lock]
 
@@ -145,12 +153,12 @@ Capistrano::Configuration.instance(:must_exist).load do
         end
         puts
       else
-        raise Capistrano::DeployLockedError
+        exit 1
       end
     end
 
     desc "Refreshes an existing deploy lock's expiry time, if it is less than the default time"
-    task :refresh_lock, roles: :app do
+    task :refresh_lock, :except => { :no_release => true } do
       fetch_deploy_lock
       next unless self[:deploy_lock]
 
